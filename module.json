@@ -1,0 +1,29 @@
+{
+    "name": "FilamentTranslationsGpt",
+    "alias": "filament-translations-gpt",
+    "description": {
+        "ar": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
+        "en": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
+        "gr": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
+        "sp": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn"
+    },
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "TomatoPHP\\FilamentTranslationsGpt\\FilamentTranslationsGptServiceProvider"
+    ],
+    "files": [],
+    "title": {
+        "ar": "Filament translations gpt",
+        "en": "Filament translations gpt",
+        "gr": "Filament translations gpt",
+        "sp": "Filament translations gpt"
+    },
+    "color": "#cc1448",
+    "icon": "heroicon-c-users",
+    "placeholder": "https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/screenshot.jpg",
+    "type": "plugin",
+    "version": "v1.0.0",
+    "github" : "https://github.com/tomatophp/filament-translations-gpt",
+    "docs" : "https://github.com/tomatophp/filament-translations-gpt"
+}
