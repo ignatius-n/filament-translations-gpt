@@ -14,14 +14,14 @@
     ],
     "files": [],
     "title": {
-        "ar": "Filament translations gpt",
-        "en": "Filament translations gpt",
-        "gr": "Filament translations gpt",
-        "sp": "Filament translations gpt"
+        "ar": "Translations GPT",
+        "en": "Translations GPT",
+        "gr": "Translations GPT",
+        "sp": "Translations GPT"
     },
     "color": "#cc1448",
     "icon": "heroicon-c-users",
-    "placeholder": "https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/screenshot.jpg",
+    "placeholder": "https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/3x1io-tomato-translations-gpt.jpg",
     "type": "plugin",
     "version": "v1.0.0",
     "github" : "https://github.com/tomatophp/filament-translations-gpt",

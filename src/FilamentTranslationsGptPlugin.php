@@ -9,7 +9,6 @@ use TomatoPHP\FilamentTranslationsGpt\Filament\Actions\GPTTranslationAction;
 
 class FilamentTranslationsGptPlugin implements Plugin
 {
-
     public function getId(): string
     {
         return 'filament-translations-gpt';

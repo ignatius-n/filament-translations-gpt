@@ -49,7 +49,7 @@ class ScanWithGPT implements ShouldQueue
                     ],
                     [
                         'role' => 'user',
-                        'content' => 'Translate the following json object from English to ' . $this->language . ", ensuring you return only the translated content without added quotes or any other extraneous details. Importantly, any word prefixed with the symbol ':' should remain unchanged",
+                        'content' => 'Translate the following json object from English to '.$this->language.", ensuring you return only the translated content without added quotes or any other extraneous details. Importantly, any word prefixed with the symbol ':' should remain unchanged",
                     ],
                     [
                         'role' => 'user',
@@ -73,7 +73,7 @@ class ScanWithGPT implements ShouldQueue
             }
 
             for ($i = 0; $i < count($chunk); $i++) {
-                $translationModel = Translation::where('key', $chunk[$i]['key'])->first();
+                $translationModel = Translation::query()->where('key', $chunk[$i]['key'])->first();
                 if ($translationModel) {
                     $text = $translationModel->text;
                     $text[$local] = $translationArray->{$chunk[$i]['key']} ?? $chunk[$i]['key'];

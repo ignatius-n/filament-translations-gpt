@@ -1,7 +1,7 @@
 ---
-name: Filament translations gpt
-slug: filament-translations-gpt
-author_slug: tomatophp
+name: Translations GPT
+slug: 3x1io-tomato-translations-gpt
+author_slug: 3x1io
 categories: [developer-tools]
 description: Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn
 discord_url:

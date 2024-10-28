@@ -1,6 +1,6 @@
-![Screenshot](https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/screenshot.jpg)
+![Screenshot](https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/3x1io-tomato-translations-gpt.jpg)
 
-# Filament translations gpt
+# Filament Translations GPT
 
 [![Latest Stable Version](https://poser.pugx.org/tomatophp/filament-translations-gpt/version.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
 [![License](https://poser.pugx.org/tomatophp/filament-translations-gpt/license.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
@@ -56,18 +56,30 @@ you can publish languages file by use this command
 php artisan vendor:publish --tag="filament-translations-gpt-lang"
 ```
 
-## Changelog
+## Testing
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+if you like to run `PEST` testing just use this command
 
-## Security
+```bash
+composer test
+```
 
-Please see [SECURITY](SECURITY.md) for more information about security.
+## Code Style
 
-## Credits
+if you like to fix the code style just use this command
 
-- [Fady Mondy](mailto:info@3x1.io)
+```bash
+composer format
+```
 
-## License
+## PHPStan
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+if you like to check the code by `PHPStan` just use this command
+
+```bash
+composer analyse
+```
+
+## Other Filament Packages
+
+Checkout our [Awesome TomatoPHP](https://github.com/tomatophp/awesome)
