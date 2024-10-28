@@ -1,10 +1,15 @@
-![Screenshot](https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/3x1io-tomato-translations-gpt.jpg)
+![Screenshot](https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/arts/3x1io-tomato-translations-gpt.jpg)
 
 # Filament Translations GPT
 
 [![Latest Stable Version](https://poser.pugx.org/tomatophp/filament-translations-gpt/version.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
 [![License](https://poser.pugx.org/tomatophp/filament-translations-gpt/license.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
 [![Downloads](https://poser.pugx.org/tomatophp/filament-translations-gpt/d/total.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
+
+## Screenshots
+
+![GPT Action](https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/arts/gpt-action.png)
+![GPT Modal](https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/arts/gpt-modal.png)
 
 Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn
 
