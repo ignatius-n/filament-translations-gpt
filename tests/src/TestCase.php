@@ -46,7 +46,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../../../filament-translations/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../vendor/tomatophp/filament-translations/database/migrations');
     }
 
     public function getEnvironmentSetUp($app): void
