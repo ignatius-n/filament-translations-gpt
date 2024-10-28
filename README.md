@@ -2,6 +2,9 @@
 
 # Filament Translations GPT
 
+[![Dependabot Updates](https://github.com/tomatophp/filament-translations-gpt/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/tomatophp/filament-translations-gpt/actions/workflows/dependabot/dependabot-updates)
+[![PHP Code Styling](https://github.com/tomatophp/filament-translations-gpt/actions/workflows/fix-php-code-styling.yml/badge.svg)](https://github.com/tomatophp/filament-translations-gpt/actions/workflows/fix-php-code-styling.yml)
+[![Tests](https://github.com/tomatophp/filament-translations-gpt/actions/workflows/tests.yml/badge.svg)](https://github.com/tomatophp/filament-translations-gpt/actions/workflows/tests.yml)
 [![Latest Stable Version](https://poser.pugx.org/tomatophp/filament-translations-gpt/version.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
 [![License](https://poser.pugx.org/tomatophp/filament-translations-gpt/license.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
 [![Downloads](https://poser.pugx.org/tomatophp/filament-translations-gpt/d/total.svg)](https://packagist.org/packages/tomatophp/filament-translations-gpt)
