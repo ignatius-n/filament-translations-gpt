@@ -46,23 +46,23 @@ abstract class TestCase extends BaseTestCase
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../../../filament-translations/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../filament-translations/database/migrations');
     }
 
     public function getEnvironmentSetUp($app): void
     {
         $app['config']->set('database.default', 'sqlite');
-        $app['config']->set('database.connections.sqlite.database', __DIR__.'/../database/database.sqlite');
+        $app['config']->set('database.connections.sqlite.database', __DIR__ . '/../database/database.sqlite');
 
         $app['config']->set('filament-translations.use_queue_on_scan', false);
 
         $app['config']->set('filament-translations.paths', [
-            __DIR__.'/../..',
+            __DIR__ . '/../..',
         ]);
 
         $app['config']->set('view.paths', [
             ...$app['config']->get('view.paths'),
-            __DIR__.'/../resources/views',
+            __DIR__ . '/../resources/views',
         ]);
     }
 }
