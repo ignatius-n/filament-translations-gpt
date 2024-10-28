@@ -53,6 +53,7 @@ abstract class TestCase extends BaseTestCase
     {
         $app['config']->set('database.default', 'sqlite');
         $app['config']->set('database.connections.sqlite.database', __DIR__.'/../database/database.sqlite');
+
         $app['config']->set('filament-translations.use_queue_on_scan', false);
 
         $app['config']->set('filament-translations.paths', [
