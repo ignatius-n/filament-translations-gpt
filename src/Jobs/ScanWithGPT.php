@@ -76,7 +76,7 @@ class ScanWithGPT implements ShouldQueue
 
             $result = json_decode($response->body(), true);
 
-            if (!isset($response['choices'][0]['message']['content'])) {
+            if (!isset($result['choices'][0]['message']['content'])) {
                 Log::error('OpenAI API request failed', [
                     'status' => $response->status(),
                     'body' => $response->body()
