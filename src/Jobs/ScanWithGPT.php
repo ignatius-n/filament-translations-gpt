@@ -71,7 +71,7 @@ class ScanWithGPT implements ShouldQueue
                     'status' => $response->status(),
                     'body' => $response->body()
                 ]);
-                throw new Exception('Failed to get translation from OpenAI: ' . $response->body());
+                throw new \Exception('Failed to get translation from OpenAI: ' . $response->body());
             }
 
             $result = json_decode($response->body(), true);
