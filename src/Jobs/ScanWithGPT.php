@@ -66,20 +66,21 @@ class ScanWithGPT implements ShouldQueue
                 'n' => 1,
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('OpenAI API request failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
+
                 throw new \Exception('Failed to get translation from OpenAI: ' . $response->body());
             }
 
             $result = json_decode($response->body(), true);
 
-            if (!isset($result['choices'][0]['message']['content'])) {
+            if (! isset($result['choices'][0]['message']['content'])) {
                 Log::error('OpenAI API request failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
                 Notification::make()
                     ->title(trans('filament-translations::translation.gpt_scan_notification_error'))
