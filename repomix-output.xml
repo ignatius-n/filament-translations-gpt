@@ -181,39 +181,6 @@ contact_links:
     about: Learn how to notify us for sensitive bugs
 </file>
 
-<file path=".github/workflows/fix-php-code-styling.yml">
-name: 'PHP Code Styling'
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - master
-    paths:
-      - '**.php'
-
-permissions:
-  contents: write
-
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Fix PHP code style issues
-        uses: aglipanci/laravel-pint-action@v2
-
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v6
-        with:
-          commit_message: "Format Code"
-          commit_user_name: 'GitHub Actions'
-</file>
-
 <file path=".github/CONTRIBUTING.md">
 # Contributing
 
@@ -293,18 +260,6 @@ updates:
 If you discover any security related issues, please email info@3x1.io instead of using the issue tracker.
 </file>
 
-<file path="config/filament-translations-gpt.php">
-<?php
-
-return [
-/* 'openai_client' => [
-        'base_url' => 'https://api.groq.com/openai/v1',
-        'api_key' => '',
-        'model' => 'llama-3.1-8b-instant',
-        'header_line' => 'api-key',
-    ], */];
-</file>
-
 <file path="tests/database/factories/TranslationFactory.php">
 <?php
 
@@ -361,73 +316,6 @@ class UserFactory extends Factory
 }
 </file>
 
-<file path="tests/src/Models/Translation.php">
-<?php
-
-namespace TomatoPHP\FilamentTranslationsGpt\Tests\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\TranslationLoader\LanguageLine;
-use TomatoPHP\FilamentTranslationsGpt\Tests\Database\Factories\TranslationFactory;
-
-class Translation extends LanguageLine
-{
-    use HasFactory;
-    use SoftDeletes;
-
-    public $translatable = ['text'];
-
-    /** @var array */
-    public $guarded = ['id'];
-
-    /** @var array */
-    protected $casts = ['text' => 'array'];
-
-    protected $table = 'language_lines';
-
-    protected $fillable = [
-        'group',
-        'key',
-        'text',
-        'namespace',
-    ];
-
-    public static function getTranslatableLocales(): array
-    {
-        return config('filament-translations.locals');
-    }
-
-    public function getTranslation(string $locale, ?string $group = null): string
-    {
-        if ($group === '*' && ! isset($this->text[$locale])) {
-            $fallback = config('app.fallback_locale');
-
-            return $this->text[$fallback] ?? $this->key;
-        }
-
-        return $this->text[$locale] ?? '';
-    }
-
-    public function setTranslation(string $locale, string $value): self
-    {
-        $this->text = array_merge($this->text ?? [], [$locale => $value]);
-
-        return $this;
-    }
-
-    protected function getTranslatedLocales(): array
-    {
-        return array_keys($this->text);
-    }
-
-    protected static function newFactory(): TranslationFactory
-    {
-        return TranslationFactory::new();
-    }
-}
-</file>
-
 <file path="tests/src/Models/User.php">
 <?php
 
@@ -470,69 +358,6 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
 it('will not use debugging functions', function () {
     expect(['dd', 'dump', 'ray'])->each->not->toBeUsed();
-});
-</file>
-
-<file path="tests/src/PluginTest.php">
-<?php
-
-use Filament\Facades\Filament;
-use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
-use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
-
-it('registers parent plugin', function () {
-    $panel = Filament::getCurrentPanel();
-
-    $panel->plugins([
-        FilamentTranslationsPlugin::make(),
-    ]);
-
-    expect($panel->getPlugin('filament-translations'))
-        ->not()
-        ->toThrow(Exception::class);
-});
-
-it('registers plugin', function () {
-    $panel = Filament::getCurrentPanel();
-
-    $panel->plugins([
-        FilamentTranslationsGptPlugin::make(),
-    ]);
-
-    expect($panel->getPlugin('filament-translations-gpt'))
-        ->not()
-        ->toThrow(Exception::class);
-});
-</file>
-
-<file path="tests/src/TranslationResourceTest.php">
-<?php
-
-use TomatoPHP\FilamentTranslations\Filament\Resources\TranslationResource;
-use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
-
-use function Pest\Laravel\actingAs;
-use function Pest\Laravel\get;
-use function Pest\Livewire\livewire;
-
-beforeEach(function () {
-    actingAs(User::factory()->create());
-});
-
-it('can render translation resource', function () {
-    get(TranslationResource::getUrl())->assertSuccessful();
-});
-
-it('can render translation gpt button', function () {
-    if (config('filament-translations.modal')) {
-        livewire(TranslationResource\Pages\ManageTranslations::class)
-            ->mountAction('gpt')
-            ->assertSuccessful();
-    } else {
-        livewire(\TomatoPHP\FilamentTranslations\Filament\Resources\TranslationResource\Pages\ListTranslations::class)
-            ->mountAction('gpt')
-            ->assertSuccessful();
-    }
 });
 </file>
 
@@ -842,9 +667,284 @@ THE SOFTWARE.
 If you discover any security related issues, please email info@3x1.io instead of using the issue tracker.
 </file>
 
+<file path=".github/FUNDING.yml">
+github: [fadymondy]
+</file>
+
+<file path="src/Filament/Actions/GPTTranslationAction.php">
+<?php
+
+namespace TomatoPHP\FilamentTranslationsGpt\Filament\Actions;
+
+use Filament\Actions;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
+use TomatoPHP\FilamentTranslationsGpt\Jobs\ScanWithGPT;
+
+class GPTTranslationAction
+{
+    public static function make(): Actions\Action
+    {
+        return Actions\Action::make('gpt')
+            ->requiresConfirmation()
+            ->icon('heroicon-o-light-bulb')
+            ->hiddenLabel()
+            ->tooltip(trans('filament-translations::translation.gpt_scan'))
+            ->schema([
+                Select::make('language')
+                    ->searchable()
+                    ->options(collect(config('filament-translations.locals'))->pluck('label', 'label')->toArray())
+                    ->label(trans('filament-translations::translation.gpt_scan_language'))
+                    ->required(),
+            ])
+            ->action(function (array $data) {
+                dispatch(new ScanWithGPT($data['language'], auth()->user()->id, get_class(auth()->user())));
+
+                Notification::make()
+                    ->title(trans('filament-translations::translation.gpt_scan_notification_start'))
+                    ->success()
+                    ->send();
+            })
+            ->color('warning')
+            ->label(trans('filament-translations::translation.gpt_scan'));
+    }
+}
+</file>
+
+<file path="tests/src/Models/Translation.php">
+<?php
+
+namespace TomatoPHP\FilamentTranslationsGpt\Tests\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\TranslationLoader\LanguageLine;
+use TomatoPHP\FilamentTranslationsGpt\Tests\Database\Factories\TranslationFactory;
+
+class Translation extends LanguageLine
+{
+    use HasFactory;
+    use SoftDeletes;
+
+    public array $translatable = [
+        'text',
+    ];
+
+    /** @var array */
+    public $guarded = ['id'];
+
+    /** @var array */
+    protected $casts = ['text' => 'array'];
+
+    protected $table = 'language_lines';
+
+    protected $fillable = [
+        'group',
+        'key',
+        'text',
+        'namespace',
+    ];
+
+    public static function getTranslatableLocales(): array
+    {
+        return config('filament-translations.locals');
+    }
+
+    public function getTranslation(string $locale, ?string $group = null): string
+    {
+        if ($group === '*' && ! isset($this->text[$locale])) {
+            $fallback = config('app.fallback_locale');
+
+            return $this->text[$fallback] ?? $this->key;
+        }
+
+        return $this->text[$locale] ?? '';
+    }
+
+    protected function getTranslatedLocales(): array
+    {
+        return array_keys($this->text);
+    }
+
+    protected static function newFactory(): TranslationFactory
+    {
+        return TranslationFactory::new();
+    }
+}
+</file>
+
+<file path="tests/src/AdminPanelProvider.php">
+<?php
+
+namespace TomatoPHP\FilamentTranslationsGpt\Tests;
+
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Pages;
+use Filament\Panel;
+use Filament\PanelProvider;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\AuthenticateSession;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
+use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
+
+class AdminPanelProvider extends PanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->default()
+            ->id('admin')
+            ->path('admin')
+            ->login()
+            ->pages([
+                Pages\Dashboard::class,
+            ])
+            ->plugin(
+                FilamentTranslationsPlugin::make()
+            )
+            ->plugin(
+                FilamentTranslationsGptPlugin::make()
+            )
+            ->middleware([
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                VerifyCsrfToken::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+            ])
+            ->authMiddleware([
+                Authenticate::class,
+            ]);
+    }
+}
+</file>
+
+<file path="tests/src/PluginTest.php">
+<?php
+
+use Filament\Facades\Filament;
+use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
+use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
+
+it('registers parent plugin', function () {
+    $panel = Filament::getCurrentOrDefaultPanel();
+
+    $panel->plugins([
+        FilamentTranslationsPlugin::make(),
+    ]);
+
+    expect($panel->getPlugin('filament-translations'))
+        ->not()
+        ->toThrow(Exception::class);
+});
+
+it('registers plugin', function () {
+    $panel = Filament::getCurrentOrDefaultPanel();
+
+    $panel->plugins([
+        FilamentTranslationsGptPlugin::make(),
+    ]);
+
+    expect($panel->getPlugin('filament-translations-gpt'))
+        ->not()
+        ->toThrow(Exception::class);
+});
+</file>
+
+<file path="tests/src/TranslationResourceTest.php">
+<?php
+
+use Filament\Facades\Filament;
+use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ListTranslations;
+use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ManageTranslations;
+use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\TranslationResource;
+use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
+use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
+use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
+
+use function Pest\Laravel\actingAs;
+use function Pest\Laravel\get;
+use function Pest\Livewire\livewire;
+
+beforeEach(function () {
+    actingAs(User::factory()->create());
+
+    $this->panel = Filament::getCurrentOrDefaultPanel();
+
+    $this->panel->plugin(
+        FilamentTranslationsPlugin::make()
+            ->allowCreate()
+            ->allowClearTranslations()
+    );
+
+    $this->panel->plugin(
+        FilamentTranslationsGptPlugin::make()
+    );
+
+});
+
+it('can render translation resource', function () {
+    get(TranslationResource::getUrl())->assertSuccessful();
+});
+
+it('can render translation gpt button', function () {
+    if (config('filament-translations.modal')) {
+        livewire(ManageTranslations::class)
+            ->mountAction('gpt')
+            ->assertSuccessful();
+    } else {
+        livewire(ListTranslations::class)
+            ->mountAction('gpt')
+            ->assertSuccessful();
+    }
+});
+</file>
+
+<file path="module.json">
+{
+    "name": "FilamentTranslationsGpt",
+    "alias": "filament-translations-gpt",
+    "description": {
+        "ar": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
+        "en": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
+        "gr": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
+        "sp": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn"
+    },
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "TomatoPHP\\FilamentTranslationsGpt\\FilamentTranslationsGptServiceProvider"
+    ],
+    "files": [],
+    "title": {
+        "ar": "Translations GPT",
+        "en": "Translations GPT",
+        "gr": "Translations GPT",
+        "sp": "Translations GPT"
+    },
+    "color": "#cc1448",
+    "icon": "heroicon-c-users",
+    "placeholder": "https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/3x1io-tomato-translations-gpt.jpg",
+    "type": "plugin",
+    "version": "v1.0.0",
+    "github" : "https://github.com/tomatophp/filament-translations-gpt",
+    "docs" : "https://github.com/tomatophp/filament-translations-gpt"
+}
+</file>
+
 <file path="testbench.yaml">
 providers:
-  - Lab404\Impersonate\ImpersonateServiceProvider
   - BladeUI\Icons\BladeIconsServiceProvider
   - BladeUI\Heroicons\BladeHeroiconsServiceProvider
   - Filament\Actions\ActionsServiceProvider
@@ -857,11 +957,8 @@ providers:
   - Filament\Widgets\WidgetsServiceProvider
   - Filament\Schemas\SchemasServiceProvider
   - RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider
-  - TomatoPHP\FilamentUsers\FilamentUsersServiceProvider
-  - TomatoPHP\FilamentUsers\Tests\AdminPanelProvider
-seeders:
-  - TomatoPHP\FilamentUsers\Tests\Database\Seeders\DatabaseSeeder
-  # i want to add a facade class
+  - TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptServiceProvider
+  - TomatoPHP\FilamentTranslationsGpt\Tests\AdminPanelProvider
 
 workbench:
   welcome: true
@@ -873,6 +970,74 @@ workbench:
     api: false
     commands: false
     views: true
+</file>
+
+<file path=".github/workflows/dependabot-auto-merge.yml">
+name: dependabot-auto-merge
+on: pull_request_target
+
+permissions:
+  pull-requests: write
+  contents: write
+
+jobs:
+  dependabot:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+
+      - name: Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2.4.0
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Auto-merge Dependabot PRs for semver-minor updates
+        if: ${{steps.metadata.outputs.update-type == 'version-update:semver-minor'}}
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Auto-merge Dependabot PRs for semver-patch updates
+        if: ${{steps.metadata.outputs.update-type == 'version-update:semver-patch'}}
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+</file>
+
+<file path=".github/workflows/fix-php-code-styling.yml">
+name: 'PHP Code Styling'
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.php'
+
+permissions:
+  contents: write
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Fix PHP code style issues
+        uses: aglipanci/laravel-pint-action@v2
+
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "Format Code"
+          commit_user_name: 'GitHub Actions'
 </file>
 
 <file path=".github/workflows/tests.yml">
@@ -952,172 +1117,16 @@ jobs:
         run: vendor/bin/pest
 </file>
 
-<file path=".github/FUNDING.yml">
-github: [fadymondy]
-</file>
-
-<file path="src/Filament/Actions/GPTTranslationAction.php">
+<file path="config/filament-translations-gpt.php">
 <?php
 
-namespace TomatoPHP\FilamentTranslationsGpt\Filament\Actions;
-
-use Filament\Actions;
-use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
-use TomatoPHP\FilamentTranslationsGpt\Jobs\ScanWithGPT;
-
-class GPTTranslationAction
-{
-    public static function make(): Actions\Action
-    {
-        return Actions\Action::make('gpt')
-            ->requiresConfirmation()
-            ->icon('heroicon-o-light-bulb')
-            ->hiddenLabel()
-            ->tooltip(trans('filament-translations::translation.gpt_scan'))
-            ->schema([
-                Select::make('language')
-                    ->searchable()
-                    ->options(collect(config('filament-translations.locals'))->pluck('label', 'label')->toArray())
-                    ->label(trans('filament-translations::translation.gpt_scan_language'))
-                    ->required(),
-            ])
-            ->action(function (array $data) {
-                dispatch(new ScanWithGPT($data['language'], auth()->user()->id, get_class(auth()->user())));
-
-                Notification::make()
-                    ->title(trans('filament-translations::translation.gpt_scan_notification_start'))
-                    ->success()
-                    ->send();
-            })
-            ->color('warning')
-            ->label(trans('filament-translations::translation.gpt_scan'));
-    }
-}
-</file>
-
-<file path="tests/src/AdminPanelProvider.php">
-<?php
-
-namespace TomatoPHP\FilamentTranslationsGpt\Tests;
-
-use Filament\Http\Middleware\Authenticate;
-use Filament\Http\Middleware\DisableBladeIconComponents;
-use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
-use Filament\Panel;
-use Filament\PanelProvider;
-use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
-use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Routing\Middleware\SubstituteBindings;
-use Illuminate\Session\Middleware\AuthenticateSession;
-use Illuminate\Session\Middleware\StartSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
-use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
-use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
-
-class AdminPanelProvider extends PanelProvider
-{
-    public function panel(Panel $panel): Panel
-    {
-        return $panel
-            ->default()
-            ->id('admin')
-            ->path('admin')
-            ->login()
-            ->pages([
-                Pages\Dashboard::class,
-            ])
-            ->plugin(
-                FilamentTranslationsPlugin::make()
-            )
-            ->plugin(
-                FilamentTranslationsGptPlugin::make()
-            )
-            ->middleware([
-                EncryptCookies::class,
-                AddQueuedCookiesToResponse::class,
-                StartSession::class,
-                AuthenticateSession::class,
-                ShareErrorsFromSession::class,
-                VerifyCsrfToken::class,
-                SubstituteBindings::class,
-                DisableBladeIconComponents::class,
-                DispatchServingFilamentEvent::class,
-            ])
-            ->authMiddleware([
-                Authenticate::class,
-            ]);
-    }
-}
-</file>
-
-<file path="module.json">
-{
-    "name": "FilamentTranslationsGpt",
-    "alias": "filament-translations-gpt",
-    "description": {
-        "ar": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
-        "en": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
-        "gr": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn",
-        "sp": "Translations Manager extension to use ChatGPT openAI to auto translate your __(), trans() fn"
-    },
-    "keywords": [],
-    "priority": 0,
-    "providers": [
-        "TomatoPHP\\FilamentTranslationsGpt\\FilamentTranslationsGptServiceProvider"
-    ],
-    "files": [],
-    "title": {
-        "ar": "Translations GPT",
-        "en": "Translations GPT",
-        "gr": "Translations GPT",
-        "sp": "Translations GPT"
-    },
-    "color": "#cc1448",
-    "icon": "heroicon-c-users",
-    "placeholder": "https://raw.githubusercontent.com/tomatophp/filament-translations-gpt/master/art/3x1io-tomato-translations-gpt.jpg",
-    "type": "plugin",
-    "version": "v1.0.0",
-    "github" : "https://github.com/tomatophp/filament-translations-gpt",
-    "docs" : "https://github.com/tomatophp/filament-translations-gpt"
-}
-</file>
-
-<file path=".github/workflows/dependabot-auto-merge.yml">
-name: dependabot-auto-merge
-on: pull_request_target
-
-permissions:
-  pull-requests: write
-  contents: write
-
-jobs:
-  dependabot:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' }}
-    steps:
-
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v2.4.0
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Auto-merge Dependabot PRs for semver-minor updates
-        if: ${{steps.metadata.outputs.update-type == 'version-update:semver-minor'}}
-        run: gh pr merge --auto --merge "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-      - name: Auto-merge Dependabot PRs for semver-patch updates
-        if: ${{steps.metadata.outputs.update-type == 'version-update:semver-patch'}}
-        run: gh pr merge --auto --merge "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+return [
+/* 'openai_client' => [
+        'base_url' => 'https://api.groq.com/openai/v1',
+        'api_key' => '',
+        'model' => 'llama-3.1-8b-instant',
+        'header_line' => 'api-key',
+    ], */];
 </file>
 
 <file path="src/Console/FilamentTranslationsGptInstall.php">
@@ -1171,13 +1180,12 @@ class FilamentTranslationsGptInstall extends Command
 
 namespace TomatoPHP\FilamentTranslationsGpt;
 
-use Filament\Panel;
 use Filament\Contracts\Plugin;
+use Filament\Panel;
 use TomatoPHP\FilamentTranslations\Facade\FilamentTranslations;
-use TomatoPHP\FilamentTranslationsGpt\Filament\Actions\GPTTranslationAction;
 use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ListTranslations;
 use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ManageTranslations;
-use TomatoPHP\FilamentTranslations\Filament\Resources\TranslationResource\Actions\ManagePageActions;
+use TomatoPHP\FilamentTranslationsGpt\Filament\Actions\GPTTranslationAction;
 
 class FilamentTranslationsGptPlugin implements Plugin
 {
@@ -1200,129 +1208,6 @@ class FilamentTranslationsGptPlugin implements Plugin
     public static function make(): self
     {
         return new FilamentTranslationsGptPlugin;
-    }
-}
-</file>
-
-<file path="src/Jobs/ScanWithGPT.php">
-<?php
-
-namespace TomatoPHP\FilamentTranslationsGpt\Jobs;
-
-use Filament\Notifications\Notification;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
-use TomatoPHP\FilamentTranslations\Models\Translation;
-
-class ScanWithGPT implements ShouldQueue
-{
-    use Dispatchable;
-    use InteractsWithQueue;
-    use Queueable;
-    use SerializesModels;
-
-    public function __construct(
-        public string $language,
-        public int $userId,
-        public string $userType
-    ) {}
-
-    /**
-     * Execute the job.
-     */
-    public function handle(): void
-    {
-        $user = $this->userType::find($this->userId);
-        $getAllTranslations = Translation::all();
-        $chunks = array_chunk($getAllTranslations->toArray(), 50);
-
-        $baseUrl = config('filament-translations-gpt.openai_client.base_url', 'https://api.openai.com/v1');
-        $apiKey = config('filament-translations-gpt.openai_client.api_key') ?? getenv('OPENAI_API_KEY');
-        $model = config('filament-translations-gpt.openai_client.model', 'gpt-3.5-turbo');
-
-        foreach ($chunks as $chunk) {
-            $makeJsonArray = [];
-            foreach ($chunk as $translation) {
-                $makeJsonArray[$translation['key']] = $translation['text']['en'] ?? $translation['key'];
-            }
-            $json = json_encode($makeJsonArray);
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type' => 'application/json',
-            ])->baseUrl($baseUrl)->post('/chat/completions', [
-                'model' => $model,
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => 'You are a translator. Your job is to translate the following json object to the language specified in the prompt.',
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => 'Translate the following json object from English to ' . $this->language . ", ensuring you return only the translated content without added quotes or any other extraneous details. Importantly, any word prefixed with the symbol ':' should remain unchanged",
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => $json,
-                    ],
-                ],
-                'temperature' => 0.4,
-                'n' => 1,
-            ]);
-
-            if (! $response->successful()) {
-                Log::error('OpenAI API request failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                throw new \Exception('Failed to get translation from OpenAI: ' . $response->body());
-            }
-
-            $result = json_decode($response->body(), true);
-
-            if (! isset($result['choices'][0]['message']['content'])) {
-                Log::error('OpenAI API request failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-                Notification::make()
-                    ->title(trans('filament-translations::translation.gpt_scan_notification_error'))
-                    ->danger()
-                    ->sendToDatabase($user);
-            }
-
-            if ($result['choices'] && count($result['choices']) > 0 && $result['choices'][0]['message']) {
-                $translationArray = json_decode($result['choices'][0]['message']['content']) ?? [];
-            }
-
-            $getLocal = config('filament-translations.locals');
-            $local = 'en';
-            foreach ($getLocal as $key => $item) {
-                if ($item['label'] == $this->language) {
-                    $local = $key;
-                }
-            }
-
-            for ($i = 0; $i < count($chunk); $i++) {
-                $translationModel = Translation::query()->where('key', $chunk[$i]['key'])->first();
-                if ($translationModel) {
-                    $text = $translationModel->text;
-                    $text[$local] = $translationArray->{$chunk[$i]['key']} ?? $chunk[$i]['key'];
-
-                    $translationModel->text = $text;
-                    $translationModel->save();
-                }
-            }
-
-            Notification::make()
-                ->title(trans('filament-translations::translation.gpt_scan_notifications_done'))
-                ->success()
-                ->sendToDatabase($user);
-        }
     }
 }
 </file>
@@ -1380,29 +1265,45 @@ use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
 use Filament\Infolists\InfolistsServiceProvider;
 use Filament\Notifications\NotificationsServiceProvider;
+use Filament\Panel;
+use Filament\Schemas\SchemasServiceProvider;
 use Filament\Support\SupportServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Livewire\LivewireServiceProvider;
+use Orchestra\Testbench\Attributes\WithEnv;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as BaseTestCase;
 use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
 use TomatoPHP\FilamentTranslations\FilamentTranslationsServiceProvider;
 use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptServiceProvider;
+use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
 
+#[WithEnv('DB_CONNECTION', 'testing')]
 abstract class TestCase extends BaseTestCase
 {
+    use LazilyRefreshDatabase;
     use WithWorkbench;
+
+    public ?Panel $panel;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->panel = app(Panel::class);
+    }
 
     protected function getPackageProviders($app): array
     {
-        return [
+        $providers = [
             ActionsServiceProvider::class,
             BladeCaptureDirectiveServiceProvider::class,
             BladeHeroiconsServiceProvider::class,
             BladeIconsServiceProvider::class,
             FilamentServiceProvider::class,
             FormsServiceProvider::class,
+            SchemasServiceProvider::class,
             InfolistsServiceProvider::class,
             LivewireServiceProvider::class,
             NotificationsServiceProvider::class,
@@ -1413,6 +1314,10 @@ abstract class TestCase extends BaseTestCase
             FilamentTranslationsGptServiceProvider::class,
             AdminPanelProvider::class,
         ];
+
+        sort($providers);
+
+        return $providers;
     }
 
     protected function defineDatabaseMigrations(): void
@@ -1422,8 +1327,17 @@ abstract class TestCase extends BaseTestCase
 
     public function getEnvironmentSetUp($app): void
     {
-        $app['config']->set('database.default', 'sqlite');
-        $app['config']->set('database.connections.sqlite.database', __DIR__ . '/../database/database.sqlite');
+        $app['config']->set('database.default', 'testing');
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+
+        $app['config']->set('auth.guards.testing.driver', 'session');
+        $app['config']->set('auth.guards.testing.provider', 'testing');
+        $app['config']->set('auth.providers.testing.driver', 'eloquent');
+        $app['config']->set('auth.providers.testing.model', User::class);
 
         $app['config']->set('filament-translations.use_queue_on_scan', false);
 
@@ -1614,6 +1528,129 @@ composer analyse
 ## Other Filament Packages
 
 Checkout our [Awesome TomatoPHP](https://github.com/tomatophp/awesome)
+</file>
+
+<file path="src/Jobs/ScanWithGPT.php">
+<?php
+
+namespace TomatoPHP\FilamentTranslationsGpt\Jobs;
+
+use Filament\Notifications\Notification;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Http;
+use TomatoPHP\FilamentTranslations\Models\Translation;
+
+class ScanWithGPT implements ShouldQueue
+{
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
+
+    public function __construct(
+        public string $language,
+        public int $userId,
+        public string $userType
+    ) {}
+
+    /**
+     * Execute the job.
+     */
+    public function handle(): void
+    {
+        $user = $this->userType::find($this->userId);
+        $getAllTranslations = Translation::all();
+        $chunks = array_chunk($getAllTranslations->toArray(), 50);
+
+        $baseUrl = config('filament-translations-gpt.openai_client.base_url', 'https://api.openai.com/v1');
+        $apiKey = config('filament-translations-gpt.openai_client.api_key') ?? getenv('OPENAI_API_KEY');
+        $model = config('filament-translations-gpt.openai_client.model', 'gpt-3.5-turbo');
+
+        foreach ($chunks as $chunk) {
+            $makeJsonArray = [];
+            foreach ($chunk as $translation) {
+                $makeJsonArray[$translation['key']] = $translation['text']['en'] ?? $translation['key'];
+            }
+            $json = json_encode($makeJsonArray);
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $apiKey,
+                'Content-Type' => 'application/json',
+            ])->baseUrl($baseUrl)->post('/chat/completions', [
+                'model' => $model,
+                'messages' => [
+                    [
+                        'role' => 'system',
+                        'content' => 'You are a translator. Your job is to translate the following json object to the language specified in the prompt.',
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => 'Translate the following json object from English to ' . $this->language . ", ensuring you return only the translated content without added quotes or any other extraneous details. Importantly, any word prefixed with the symbol ':' should remain unchanged",
+                    ],
+                    [
+                        'role' => 'user',
+                        'content' => $json,
+                    ],
+                ],
+                'temperature' => 0.4,
+                'n' => 1,
+            ]);
+
+            if (! $response->successful()) {
+                Log::error('OpenAI API request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                throw new \Exception('Failed to get translation from OpenAI: ' . $response->body());
+            }
+
+            $result = json_decode($response->body(), true);
+
+            if (! isset($result['choices'][0]['message']['content'])) {
+                Log::error('OpenAI API request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                Notification::make()
+                    ->title(trans('filament-translations::translation.gpt_scan_notification_error'))
+                    ->danger()
+                    ->sendToDatabase($user);
+            }
+
+            if ($result['choices'] && count($result['choices']) > 0 && $result['choices'][0]['message']) {
+                $translationArray = json_decode($result['choices'][0]['message']['content']) ?? [];
+            }
+
+            $getLocal = config('filament-translations.locals');
+            $local = 'en';
+            foreach ($getLocal as $key => $item) {
+                if ($item['label'] == $this->language) {
+                    $local = $key;
+                }
+            }
+
+            for ($i = 0; $i < count($chunk); $i++) {
+                $translationModel = Translation::query()->where('key', $chunk[$i]['key'])->first();
+                if ($translationModel) {
+                    $text = $translationModel->text;
+                    $text[$local] = $translationArray->{$chunk[$i]['key']} ?? $chunk[$i]['key'];
+
+                    $translationModel->text = $text;
+                    $translationModel->save();
+                }
+            }
+
+            Notification::make()
+                ->title(trans('filament-translations::translation.gpt_scan_notifications_done'))
+                ->success()
+                ->sendToDatabase($user);
+        }
+    }
+}
 </file>
 
 </files>

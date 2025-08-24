@@ -2,33 +2,33 @@
 
 namespace TomatoPHP\FilamentTranslationsGpt\Tests;
 
-use Filament\Panel;
-use Filament\FilamentServiceProvider;
-use Livewire\LivewireServiceProvider;
-use Filament\Forms\FormsServiceProvider;
-use Filament\Tables\TablesServiceProvider;
-use Orchestra\Testbench\Attributes\WithEnv;
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use Filament\Actions\ActionsServiceProvider;
+use Filament\FilamentServiceProvider;
+use Filament\Forms\FormsServiceProvider;
+use Filament\Infolists\InfolistsServiceProvider;
+use Filament\Notifications\NotificationsServiceProvider;
+use Filament\Panel;
 use Filament\Schemas\SchemasServiceProvider;
 use Filament\Support\SupportServiceProvider;
+use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
-use Orchestra\Testbench\Concerns\WithWorkbench;
-use Filament\Infolists\InfolistsServiceProvider;
-use Orchestra\Testbench\TestCase as BaseTestCase;
-use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
-use Filament\Notifications\NotificationsServiceProvider;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
-use TomatoPHP\FilamentTranslations\FilamentTranslationsServiceProvider;
+use Livewire\LivewireServiceProvider;
+use Orchestra\Testbench\Attributes\WithEnv;
+use Orchestra\Testbench\Concerns\WithWorkbench;
+use Orchestra\Testbench\TestCase as BaseTestCase;
 use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
+use TomatoPHP\FilamentTranslations\FilamentTranslationsServiceProvider;
 use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptServiceProvider;
+use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
 
 #[WithEnv('DB_CONNECTION', 'testing')]
 abstract class TestCase extends BaseTestCase
 {
-    use WithWorkbench;
     use LazilyRefreshDatabase;
+    use WithWorkbench;
 
     public ?Panel $panel;
 
