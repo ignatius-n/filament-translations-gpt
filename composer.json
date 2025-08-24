@@ -57,8 +57,7 @@
         "php": "^8.2|^8.3|^8.4",
         "tomatophp/console-helpers": "^1.1",
         "filament/filament": "^4.0",
-        "tomatophp/filament-translations": "^4.0",
-        "openai-php/laravel": "^0.11.0"
+        "tomatophp/filament-translations": "^4.0.0"
     },
     "require-dev": {
         "larastan/larastan": "^2.9||^3.0",
