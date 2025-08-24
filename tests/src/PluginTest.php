@@ -5,7 +5,7 @@ use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
 use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
 
 it('registers parent plugin', function () {
-    $panel = Filament::getCurrentPanel();
+    $panel = Filament::getCurrentOrDefaultPanel();
 
     $panel->plugins([
         FilamentTranslationsPlugin::make(),
@@ -17,7 +17,7 @@ it('registers parent plugin', function () {
 });
 
 it('registers plugin', function () {
-    $panel = Filament::getCurrentPanel();
+    $panel = Filament::getCurrentOrDefaultPanel();
 
     $panel->plugins([
         FilamentTranslationsGptPlugin::make(),

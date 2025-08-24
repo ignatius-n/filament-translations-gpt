@@ -1,14 +1,32 @@
 <?php
 
-use TomatoPHP\FilamentTranslations\Filament\Resources\TranslationResource;
-use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
+use Filament\Facades\Filament;
 
-use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
+use function Pest\Laravel\actingAs;
 use function Pest\Livewire\livewire;
+use TomatoPHP\FilamentTranslationsGpt\Tests\Models\User;
+use TomatoPHP\FilamentTranslations\FilamentTranslationsPlugin;
+use TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptPlugin;
+use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\TranslationResource;
+use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ListTranslations;
+use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ManageTranslations;
 
 beforeEach(function () {
     actingAs(User::factory()->create());
+
+    $this->panel = Filament::getCurrentOrDefaultPanel();
+
+    $this->panel->plugin(
+        FilamentTranslationsPlugin::make()
+            ->allowCreate()
+            ->allowClearTranslations()
+    );
+
+    $this->panel->plugin(
+        FilamentTranslationsGptPlugin::make()
+    );
+
 });
 
 it('can render translation resource', function () {
@@ -17,11 +35,11 @@ it('can render translation resource', function () {
 
 it('can render translation gpt button', function () {
     if (config('filament-translations.modal')) {
-        livewire(TranslationResource\Pages\ManageTranslations::class)
+        livewire(ManageTranslations::class)
             ->mountAction('gpt')
             ->assertSuccessful();
     } else {
-        livewire(\TomatoPHP\FilamentTranslations\Filament\Resources\TranslationResource\Pages\ListTranslations::class)
+        livewire(ListTranslations::class)
             ->mountAction('gpt')
             ->assertSuccessful();
     }

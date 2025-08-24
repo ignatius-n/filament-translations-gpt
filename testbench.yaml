@@ -1,5 +1,4 @@
 providers:
-  - Lab404\Impersonate\ImpersonateServiceProvider
   - BladeUI\Icons\BladeIconsServiceProvider
   - BladeUI\Heroicons\BladeHeroiconsServiceProvider
   - Filament\Actions\ActionsServiceProvider
@@ -12,11 +11,8 @@ providers:
   - Filament\Widgets\WidgetsServiceProvider
   - Filament\Schemas\SchemasServiceProvider
   - RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider
-  - TomatoPHP\FilamentUsers\FilamentUsersServiceProvider
-  - TomatoPHP\FilamentUsers\Tests\AdminPanelProvider
-seeders:
-  - TomatoPHP\FilamentUsers\Tests\Database\Seeders\DatabaseSeeder
-  # i want to add a facade class
+  - TomatoPHP\FilamentTranslationsGpt\FilamentTranslationsGptServiceProvider
+  - TomatoPHP\FilamentTranslationsGpt\Tests\AdminPanelProvider
 
 workbench:
   welcome: true
