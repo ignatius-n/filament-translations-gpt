@@ -2,12 +2,12 @@
 
 namespace TomatoPHP\FilamentTranslationsGpt;
 
-use Filament\Panel;
 use Filament\Contracts\Plugin;
+use Filament\Panel;
 use TomatoPHP\FilamentTranslations\Facade\FilamentTranslations;
-use TomatoPHP\FilamentTranslationsGpt\Filament\Actions\GPTTranslationAction;
 use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ListTranslations;
 use TomatoPHP\FilamentTranslations\Filament\Resources\Translations\Pages\ManageTranslations;
+use TomatoPHP\FilamentTranslationsGpt\Filament\Actions\GPTTranslationAction;
 
 class FilamentTranslationsGptPlugin implements Plugin
 {
