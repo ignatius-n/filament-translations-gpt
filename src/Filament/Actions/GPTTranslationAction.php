@@ -16,7 +16,7 @@ class GPTTranslationAction
             ->icon('heroicon-o-light-bulb')
             ->hiddenLabel()
             ->tooltip(trans('filament-translations::translation.gpt_scan'))
-            ->form([
+            ->schema([
                 Select::make('language')
                     ->searchable()
                     ->options(collect(config('filament-translations.locals'))->pluck('label', 'label')->toArray())
